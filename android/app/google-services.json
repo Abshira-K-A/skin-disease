@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "604093039229",
+    "project_id": "skin-cure-ed05b",
+    "storage_bucket": "skin-cure-ed05b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604093039229:android:7b94a6159e0de089b5e714",
+        "android_client_info": {
+          "package_name": "com.example.skinCure"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4MAzV4vR6VIPKDm3Djsi0lJ5-BnYjzVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
