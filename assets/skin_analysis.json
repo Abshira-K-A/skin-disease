@@ -1,0 +1,38 @@
+{
+    "skin_types": [
+      "Dry",
+      "Oily",
+      "Combination",
+      "Normal",
+      "Sensitive"
+    ],
+    "characteristics": {
+      "Dry": "Feels tight, rough, flaky; lacks oil.",
+      "Oily": "Shiny, greasy, prone to acne and large pores.",
+      "Combination": "Oily T-zone (forehead, nose, chin) with dry cheeks.",
+      "Normal": "Balanced, smooth, not too dry or oily.",
+      "Sensitive": "Easily irritated, redness, reacts to products."
+    },
+    "recommendations": {
+      "Dry": "Use hydrating cleansers, rich moisturizers, and avoid alcohol-based products.",
+      "Oily": "Use oil-free moisturizers, clay masks, and avoid heavy creams.",
+      "Combination": "Use lightweight moisturizers, balance oily and dry areas separately.",
+      "Normal": "Maintain a simple skincare routine with gentle products.",
+      "Sensitive": "Use fragrance-free, hypoallergenic products and avoid harsh chemicals."
+    },
+    "best_ingredients": {
+      "Dry": ["Hyaluronic Acid", "Shea Butter", "Glycerin"],
+      "Oily": ["Salicylic Acid", "Niacinamide", "Witch Hazel"],
+      "Combination": ["Green Tea Extract", "Hyaluronic Acid", "Aloe Vera"],
+      "Normal": ["Vitamin C", "Ceramides", "Peptides"],
+      "Sensitive": ["Chamomile", "Aloe Vera", "Colloidal Oatmeal"]
+    },
+    "worst_ingredients": {
+      "Dry": ["Alcohol", "Benzoyl Peroxide", "Fragrances"],
+      "Oily": ["Coconut Oil", "Petrolatum", "Lanolin"],
+      "Combination": ["Heavy Oils", "Harsh Exfoliants"],
+      "Normal": ["None - can tolerate most ingredients"],
+      "Sensitive": ["Sulfates", "Alcohol", "Synthetic Fragrances"]
+    }
+  }
+  

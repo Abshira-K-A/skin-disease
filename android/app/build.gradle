@@ -75,12 +75,12 @@ def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "
 
 android {
     namespace =  "com.example.skinCure"
-    compileSdk = 34  // Latest stable SDK
+    compileSdk = 35  // Latest stable SDK
 
     defaultConfig {
         applicationId =  "com.example.skinCure"
         minSdk = 23  // Minimum SDK, required by Firebase for some features
-        targetSdk = 34  // Target SDK should be the latest or as required
+        targetSdk = 35  // Target SDK should be the latest or as required
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
     }
