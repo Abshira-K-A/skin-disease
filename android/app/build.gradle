@@ -79,7 +79,7 @@ android {
 
     defaultConfig {
         applicationId =  "com.example.skinCure"
-        minSdk = 23  // Minimum SDK, required by Firebase for some features
+        minSdk = 26  // Minimum SDK, required by Firebase for some features
         targetSdk = 35  // Target SDK should be the latest or as required
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName

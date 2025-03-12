@@ -38,7 +38,12 @@ dependencies:
   cloud_firestore: 5.4.4
   firebase_storage: 12.3.4 
   image_picker: ^1.0.7  
+  tflite_flutter: ^0.10.4
+  path_provider: ^2.1.2
+  image: 4.3.0
   cupertino_icons: ^1.0.6
+  permission_handler: ^11.0.1
+
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +70,7 @@ flutter:
   assets:
     - assets/skin_analysis.json
     - assets/skin_animation.json
-
+    #- assets/skin_model.tflite
   # To add assets to your application, add an assets section, like this:
   #assets:
   
