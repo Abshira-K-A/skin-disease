@@ -7,10 +7,10 @@ class SkinTypeTestPage extends StatefulWidget {
   const SkinTypeTestPage({super.key});
 
   @override
-  _SkinTypeTestPageState createState() => _SkinTypeTestPageState();
+  SkinTypeTestPageState createState() => SkinTypeTestPageState();
 }
 
-class _SkinTypeTestPageState extends State<SkinTypeTestPage> {
+class SkinTypeTestPageState extends State<SkinTypeTestPage> {
   int _oilyScore = 0;
   int _dryScore = 0;
   int _sensitiveScore = 0;
