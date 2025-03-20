@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+
     
     <!-- Required for Android 13+ to access media files -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
@@ -17,6 +19,8 @@
     <!-- ✅ Added Required Permissions for Notifications -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+
  
  <!-- permission for  location -->
  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -55,6 +59,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- ✅ Add Geolocator Location Service -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:permission="android.permission.FOREGROUND_SERVICE"
+            android:foregroundServiceType="location"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

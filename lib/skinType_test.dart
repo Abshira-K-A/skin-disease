@@ -15,7 +15,9 @@ class SkinTypeTestPageState extends State<SkinTypeTestPage> {
   int _dryScore = 0;
   int _sensitiveScore = 0;
   int _combinationScore = 0;
+  int _normalScore = 0;
   int _currentQuestionIndex = 0;
+  String? _skinType;
 
   final List<Map<String, dynamic>> _questions = [
     {
@@ -58,6 +60,16 @@ class SkinTypeTestPageState extends State<SkinTypeTestPage> {
         'Sensitive or itchy': 'sensitive',
       }
     },
+    {
+      'question': 'How does your skin react to cold weather?',
+      'options': {
+        'Gets very dry & flaky': 'dry',
+        'Remains oily & shiny': 'oily',
+        'Some areas get dry, others oily': 'combination',
+        'Feels normal & balanced': 'normal',
+        'Becomes red & irritated': 'sensitive',
+      }
+    },
   ];
 
   void _answerQuestion(String skinType) {
@@ -66,6 +78,7 @@ class SkinTypeTestPageState extends State<SkinTypeTestPage> {
       if (skinType == 'dry') _dryScore++;
       if (skinType == 'sensitive') _sensitiveScore++;
       if (skinType == 'combination') _combinationScore++;
+      if (skinType == 'normal') _normalScore++;
 
       _currentQuestionIndex++;
     });
@@ -76,49 +89,35 @@ class SkinTypeTestPageState extends State<SkinTypeTestPage> {
   }
 
   void _determineSkinType() async {
-    String skinType;
-    if (_oilyScore > _dryScore && _oilyScore > _sensitiveScore && _oilyScore > _combinationScore) {
-      skinType = "Oily";
-    } else if (_dryScore > _oilyScore && _dryScore > _sensitiveScore && _dryScore > _combinationScore) {
-      skinType = "Dry";
-    } else if (_sensitiveScore > _oilyScore && _sensitiveScore > _dryScore && _sensitiveScore > _combinationScore) {
-      skinType = "Sensitive";
-    } else if (_combinationScore > _oilyScore && _combinationScore > _dryScore && _combinationScore > _sensitiveScore) {
-      skinType = "Combination";
-    } else {
-      skinType = "Normal";
-    }
+    Map<String, int> scores = {
+      "Oily": _oilyScore,
+      "Dry": _dryScore,
+      "Sensitive": _sensitiveScore,
+      "Combination": _combinationScore,
+      "Normal": _normalScore,
+    };
 
-    // Save the skin type in Firestore
+    String skinType = scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+
+    setState(() {
+      _skinType = skinType;
+    });
+
+    // Save to Firebase
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'skinType': skinType,
       });
     }
-
-    // Navigate to result page
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SkinTypeResultPage(skinType: skinType),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_currentQuestionIndex >= _questions.length) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final question = _questions[_currentQuestionIndex];
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Skin Type Test", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Skin Type Test"),
         backgroundColor: Colors.purple.shade400,
-        centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -134,43 +133,10 @@ class SkinTypeTestPageState extends State<SkinTypeTestPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Text(
-                          question['question'],
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ...question['options'].entries.map((entry) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple.shade300,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(double.infinity, 50),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              onPressed: () => _answerQuestion(entry.value),
-                              child: Text(entry.key, style: const TextStyle(fontSize: 16)),
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  "Question ${_currentQuestionIndex + 1} of ${_questions.length}",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
+                if (_currentQuestionIndex < _questions.length)
+                  _buildQuestionCard()
+                else
+                  _buildResultCard(),
               ],
             ),
           ),
@@ -178,15 +144,46 @@ class SkinTypeTestPageState extends State<SkinTypeTestPage> {
       ),
     );
   }
-}
 
-class SkinTypeResultPage extends StatelessWidget {
-  final String skinType;
+  Widget _buildQuestionCard() {
+    final question = _questions[_currentQuestionIndex];
 
-  const SkinTypeResultPage({super.key, required this.skinType});
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              question['question'],
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ...question['options'].entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple.shade300,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  onPressed: () => _answerQuestion(entry.value),
+                  child: Text(entry.key, style: const TextStyle(fontSize: 16)),
+                ),
+              );
+            }).toList(),
+            const SizedBox(height: 20),
+            Text("Question ${_currentQuestionIndex + 1} of ${_questions.length}"),
+          ],
+        ),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildResultCard() {
     Map<String, String> recommendations = {
       "Oily": "Use oil-free moisturizers, clay masks, and avoid heavy creams.",
       "Dry": "Use hydrating cleansers, rich moisturizers, and avoid alcohol-based products.",
@@ -195,26 +192,47 @@ class SkinTypeResultPage extends StatelessWidget {
       "Sensitive": "Use fragrance-free, hypoallergenic products and avoid harsh chemicals.",
     };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Skin Type Result"),
-        backgroundColor: Colors.purple.shade400,
-        centerTitle: true,
-      ),
-      body: Padding(
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Your Skin Type is:", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text(
+              "Your Skin Type:",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
-            Text(skinType, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.purple.shade700)),
+            Text(
+              _skinType ?? "Analyzing...",
+              style: TextStyle(fontSize: 24, color: Colors.purple.shade700, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
-            Text(recommendations[skinType] ?? "No data", textAlign: TextAlign.center),
+            Text(
+              recommendations[_skinType] ?? "No data",
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Back to Home"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.shade400,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              onPressed: () {
+                setState(() {
+                  _currentQuestionIndex = 0;
+                  _oilyScore = 0;
+                  _dryScore = 0;
+                  _sensitiveScore = 0;
+                  _combinationScore = 0;
+                  _normalScore = 0;
+                  _skinType = null;
+                });
+              },
+              child: const Text("Retake Test"),
             ),
           ],
         ),
@@ -222,4 +240,3 @@ class SkinTypeResultPage extends StatelessWidget {
     );
   }
 }
-
