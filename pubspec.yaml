@@ -80,6 +80,12 @@ flutter:
   assets:
     - assets/skin_analysis.json
     - assets/skin_animation.json
+    - assets/winter_care.jpg
+    - assets/summer_care.jpg
+    - assets/fall_care.jpg
+    - assets/spring_care.jpg
+    - assets/skinmate.tflite
+    - assets/labels.txt
     #- assets/skin_model.tflite
   # To add assets to your application, add an assets section, like this:
   #assets:

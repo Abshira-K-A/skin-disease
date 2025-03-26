@@ -36,7 +36,23 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
   void initState() {
     super.initState();
     _loadUserData();
-    _listenForRoutineUpdates(); // ✅ Listen for Firestore updates
+    _listenForRoutineUpdates() {
+  FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.userId)
+      .collection('skincare_routines')
+      .snapshots()
+      .listen((snapshot) {
+    setState(() {
+      _answeredQuestions = snapshot.docs.map((doc) => {
+        'question': doc['question'] as String,
+        'answer': doc['answer'] as String,
+        'status': doc.data().containsKey('status') ? doc['status'] as String : 'Active',
+      }).toList();
+    });
+  });
+}
+// ✅ Listen for Firestore updates
   }
 
   Future<void> _loadUserData() async {
@@ -171,17 +187,22 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
                   .get()
                   .then((snapshot) {
                 for (DocumentSnapshot doc in snapshot.docs) {
-                  doc.reference.delete();
+                doc.reference.update({'status': 'Expired'}); // doc.reference.delete();
                 }
               });
 
               // ✅ Clear local list
               setState(() {
-                _answeredQuestions.clear();
-              });
+    for (var entry in _answeredQuestions) {
+      entry['status'] = 'Expired';
+    }
+  });
+              // setState(() {
+              //   _answeredQuestions.clear();
+              // });
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("All skincare routine data deleted.")),
+                const SnackBar(content: Text("All skincare routines marked as Expired..")),
               );
             },
           ),
@@ -210,6 +231,7 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
                   const SizedBox(height: 20),
                   Column(
                     children: _answeredQuestions.map((entry) {
+                      bool isExpired = entry['status'] == 'Expired';
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Column(
@@ -222,10 +244,16 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                                  
                             Text(
                               "➡ ${entry['answer']!}",
                               style: const TextStyle(fontSize: 16, color: Colors.black54),
                             ),
+                             if (isExpired)
+                                Text(
+                                   "🕒 Expired",
+                                       style: const TextStyle(fontSize: 14, color: Colors.red, fontWeight: FontWeight.bold),
+            ),
                             const Divider(),
                           ],
                         ),
