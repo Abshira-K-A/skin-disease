@@ -8,28 +8,43 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
-
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     
     <!-- Required for Android 13+ to access media files -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
      <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 
     <!-- ✅ Added Required Permissions for Notifications -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
  
  <!-- permission for  location -->
  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
+ <queries>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+          <data android:scheme="https" />
+     </intent>
+          <intent>
+            <action android:name="android.intent.action.VIEW" />
+             <data android:scheme="geo" />
+      </intent>
+      </queries>
+
+
     <application
         android:label="skinCure"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+       
 
 
         <activity
