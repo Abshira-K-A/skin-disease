@@ -1,28 +1,10 @@
 
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
 import '../notification_service.dart';
-
-
-Future<void> requestExactAlarmPermission(BuildContext context) async {
-  if (Platform.isAndroid) {
-    int sdkInt = int.parse(Platform.version.split(" ")[0]);
-    
-    if (sdkInt >= 31) { // Android 12 and above
-      final intent = AndroidIntent(
-        action: 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
-        flags: [Flag.FLAG_ACTIVITY_NEW_TASK],
-      );
-      await intent.launch();
-    }
-  }
-}
 
 class ScheduleRoutinePage extends StatefulWidget {
   final String userId;
@@ -34,6 +16,14 @@ class ScheduleRoutinePage extends StatefulWidget {
 }
 
 class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
+  // Using your home page color palette
+  final Color _primaryColor = const Color(0xFF8B4513); // Warm saddle brown
+  final Color _secondaryColor = const Color(0xFFD2B48C); // Tan
+  final Color _accentColor = const Color(0xFFCD853F); // Peru (warm orange-brown)
+  final Color _backgroundColor = const Color(0xFFFAF9F6); // Off-white
+  final Color _cardColor = Colors.white;
+  final Color _textColor = const Color(0xFF5D4037); // Dark brown
+
   TimeOfDay _morningTime = TimeOfDay(hour: 8, minute: 0);
   TimeOfDay _eveningTime = TimeOfDay(hour: 20, minute: 0);
   List<String> _selectedProducts = [];
@@ -44,20 +34,12 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
   bool _hasExistingSchedule = false;
 
   final List<String> _productOptions = [
-    'Cleanser',
-    'Toner',
-    'Moisturizer',
-    'Sunscreen',
-    'Serum',
-    'Eye Cream',
-    'Face Mask',
-    'Exfoliator'
+    'Cleanser', 'Toner', 'Moisturizer', 'Sunscreen',
+    'Serum', 'Eye Cream', 'Face Mask', 'Exfoliator'
   ];
 
   final List<String> _frequencyOptions = [
-    'Morning only',
-    'Evening only',
-    'Both'
+    'Morning only', 'Evening only', 'Both'
   ];
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -71,48 +53,37 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
     _loadExistingSchedule();
   }
 
-Future<void> _checkNotificationPermissions() async {
-  if (Theme.of(context).platform == TargetPlatform.android) {
-    // For Android 13+ (API level 33+)
-    final AndroidFlutterLocalNotificationsPlugin? androidPlugin = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-        
-    if (androidPlugin != null) {
-      // Check if we're on Android 13+
-      final bool? granted = await androidPlugin.areNotificationsEnabled();
-      if (granted == false) {
+  Future<void> _checkNotificationPermissions() async {
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      final AndroidFlutterLocalNotificationsPlugin? androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        final bool? granted = await androidPlugin.areNotificationsEnabled();
+        if (granted == false) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Please enable notifications for reminder functionality"),
+                duration: Duration(seconds: 3),
+             ) );
+          });
+        }
+      }
+    } else if (Theme.of(context).platform == TargetPlatform.iOS) {
+      final bool? result = await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      if (result == false) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Please enable notifications for reminder functionality"),
+              content: Text("Please enable notifications in Settings"),
               duration: Duration(seconds: 3),
-            ),
-          );
+           ) );
         });
       }
     }
-  } else if (Theme.of(context).platform == TargetPlatform.iOS) {
-    // For iOS
-    final bool? result = await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-        
-    if (result == false) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Please enable notifications in Settings"),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      });
-    }
   }
-}
 
   Future<void> _loadUserData() async {
     DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
@@ -133,14 +104,13 @@ Future<void> _checkNotificationPermissions() async {
       QuerySnapshot scheduleSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
-          .collection('skincare_schedules')
+          .collection('skincare_routines')
           .orderBy('created_at', descending: true)
           .limit(1)
           .get();
 
       if (scheduleSnapshot.docs.isNotEmpty) {
         var scheduleData = scheduleSnapshot.docs.first.data() as Map<String, dynamic>;
-        
         setState(() {
           _hasExistingSchedule = true;
           _routineFrequency = scheduleData['frequency'] ?? 'Both';
@@ -224,20 +194,20 @@ Future<void> _checkNotificationPermissions() async {
         );
       }
 
-    if (_routineFrequency == 'Evening only' || _routineFrequency == 'Both') {
+      if (_routineFrequency == 'Evening only' || _routineFrequency == 'Both') {
         await NotificationService.scheduleDailyNotification(
           id: 2,
-          title: "🌞 Evening Skincare Reminder",
-          body: "Time for your Evening routine! Products: ${_selectedProducts.join(', ')}",
+          title: "🌙 Evening Skincare Reminder",
+          body: "Time for your evening routine! Products: ${_selectedProducts.join(', ')}",
           time: _eveningTime,
         );
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Routine and reminders updated successfully!"),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: const Text("Routine and reminders updated successfully!"),
+          backgroundColor: _accentColor,
+          duration: const Duration(seconds: 3),
         ),
       );
 
@@ -249,7 +219,7 @@ Future<void> _checkNotificationPermissions() async {
         SnackBar(
           content: Text("Error: ${e.toString()}"),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
       debugPrint("Error saving routine: $e");
@@ -267,10 +237,10 @@ Future<void> _checkNotificationPermissions() async {
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.deepOrangeAccent,
+            colorScheme: ColorScheme.light(
+              primary: _accentColor,
               onPrimary: Colors.white,
-              onSurface: Colors.black,
+              onSurface: _textColor,
             ),
             timePickerTheme: TimePickerThemeData(
               shape: RoundedRectangleBorder(
@@ -297,76 +267,133 @@ Future<void> _checkNotificationPermissions() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: Text(_hasExistingSchedule ? "Update Your Routine" : "Schedule Your Routine"),
-        backgroundColor: Colors.deepOrangeAccent,
+        title: Text(
+          _hasExistingSchedule ? "Update Routine" : "Create Routine",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: _primaryColor,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Personal greeting
+                  // Welcome Card
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.deepOrangeAccent.withOpacity(0.1),
+                      color: _cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.deepOrangeAccent.withOpacity(0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                      )  ],
                     ),
-                    child: RichText(
-                      text: TextSpan(
-                        style: GoogleFonts.poppins(fontSize: 16),
-                        children: [
-                          TextSpan(
-                            text: "Hello $username! ",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepOrangeAccent.shade700),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Hello, $username!",
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: _primaryColor,
                           ),
-                          TextSpan(
-                            text: _hasExistingSchedule 
-                                ? "Update your skincare routine "
-                                : "Let's schedule your skincare routine ",
+                        ),
+                        const SizedBox(height: 8),
+                        RichText(
+                          text: TextSpan(
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: _textColor,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: _hasExistingSchedule 
+                                    ? "Update your skincare routine "
+                                    : "Let's create your personalized routine ",
+                              ),
+                              TextSpan(
+                                text: "for your ",
+                              ),
+                              TextSpan(
+                                text: skinType ?? "skin",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: _accentColor,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ".",
+                              ),
+                            ],
                           ),
-                          TextSpan(
-                            text: "for your $skinType skin.",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
-                  // Routine Frequency
+                  // Frequency Section
                   Text(
-                    "When do you do your skincare routine?",
+                    "Routine Frequency",
                     style: GoogleFonts.poppins(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600),
+                      fontWeight: FontWeight.w600,
+                      color: _textColor,
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  ..._frequencyOptions.map((option) {
-                    return RadioListTile<String>(
-                      title: Text(option),
-                      value: option,
-                      groupValue: _routineFrequency,
-                      onChanged: (value) {
-                        setState(() {
-                          _routineFrequency = value;
-                        });
-                      },
-                      activeColor: Colors.deepOrangeAccent,
-                      contentPadding: EdgeInsets.zero,
-                    );
-                  }),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                    )],
+                    ),
+                    child: Column(
+                      children: _frequencyOptions.map((option) {
+                        return RadioListTile<String>(
+                          title: Text(
+                            option,
+                            style: GoogleFonts.poppins(
+                              color: _textColor,
+                            ),
+                          ),
+                          value: option,
+                          groupValue: _routineFrequency,
+                          onChanged: (value) {
+                            setState(() {
+                              _routineFrequency = value;
+                            });
+                          },
+                          activeColor: _accentColor,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
                   // Time Selection Cards
                   if (_routineFrequency == 'Morning only' || _routineFrequency == 'Both')
@@ -383,51 +410,80 @@ Future<void> _checkNotificationPermissions() async {
                       time: _eveningTime,
                     ),
                   
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
                   // Product Selection
                   Text(
-                    "Select products you use:",
+                    "Your Products",
                     style: GoogleFonts.poppins(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600),
+                      fontWeight: FontWeight.w600,
+                      color: _textColor,
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _productOptions.map((product) {
-                      return FilterChip(
-                        label: Text(product),
-                        selected: _selectedProducts.contains(product),
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              _selectedProducts.add(product);
-                            } else {
-                              _selectedProducts.remove(product);
-                            }
-                          });
-                        },
-                        selectedColor: Colors.deepOrangeAccent.withOpacity(0.2),
-                        checkmarkColor: Colors.deepOrangeAccent,
-                        labelStyle: TextStyle(
-                          color: _selectedProducts.contains(product)
-                              ? Colors.deepOrangeAccent
-                              : Colors.grey.shade700,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color: _selectedProducts.contains(product)
-                                ? Colors.deepOrangeAccent
-                                : Colors.grey.shade300,
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                     ) ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Select products you use:",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: _textColor.withOpacity(0.8),
                           ),
                         ),
-                      );
-                    }).toList(),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _productOptions.map((product) {
+                            return FilterChip(
+                              label: Text(product),
+                              selected: _selectedProducts.contains(product),
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedProducts.add(product);
+                                  } else {
+                                    _selectedProducts.remove(product);
+                                  }
+                                });
+                              },
+                              selectedColor: _accentColor.withOpacity(0.2),
+                              checkmarkColor: _accentColor,
+                              labelStyle: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: _selectedProducts.contains(product)
+                                    ? _accentColor
+                                    : _textColor.withOpacity(0.8),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: _selectedProducts.contains(product)
+                                      ? _accentColor
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
 
                   // Save Button
                   SizedBox(
@@ -435,17 +491,18 @@ Future<void> _checkNotificationPermissions() async {
                     child: ElevatedButton(
                       onPressed: _saveRoutine,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepOrangeAccent,
+                        backgroundColor: _accentColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
                       ),
                       child: Text(
-                        _hasExistingSchedule ? "UPDATE ROUTINE" : "SAVE ROUTINE",
-                        style: const TextStyle(
+                        _hasExistingSchedule ? "Update Routine" : "Save Routine",
+                        style: GoogleFonts.poppins(
                           fontSize: 16,
-                          fontWeight: FontWeight.bold),
+                          fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -456,37 +513,70 @@ Future<void> _checkNotificationPermissions() async {
   }
 
   Widget _buildTimeCard(BuildContext context, {required bool isMorning, required TimeOfDay time}) {
-    return Card(
-      elevation: 2,
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: _cardColor,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+      )],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              isMorning ? "🌞 Morning Routine" : "🌙 Evening Routine",
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Icon(
+                  isMorning ? Icons.wb_sunny : Icons.nightlight_round,
+                  color: _accentColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isMorning ? "Morning Routine" : "Evening Routine",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: _textColor,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.access_time, color: Colors.deepOrangeAccent),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _accentColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.access_time,
+                  color: _accentColor,
+                ),
+              ),
               title: Text(
                 time.format(context),
-                style: GoogleFonts.poppins(fontSize: 16),
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: _textColor,
+                ),
               ),
               trailing: TextButton(
                 onPressed: () => _selectTime(context, isMorning),
+                style: TextButton.styleFrom(
+                  foregroundColor: _accentColor,
+                ),
                 child: Text(
                   "Change",
                   style: GoogleFonts.poppins(
-                    color: Colors.deepOrangeAccent),
+                    fontWeight: FontWeight.w500),
                 ),
               ),
             ),

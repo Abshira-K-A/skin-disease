@@ -1,7 +1,4 @@
 
-
-
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,13 +15,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Map<String, dynamic>? userData;
   bool isLoading = true;
 
+  // Color scheme matching home page
+  final Color _accentColor = const Color(0xFFCD853F); // Peru (warm orange-brown)
+  final Color _backgroundColor = const Color(0xFFFAF9F6); // Off-white
+  final Color _cardColor = Colors.white;
+  final Color _textColor = const Color(0xFF5D4037); // Dark brown
+  final Color _secondaryTextColor = const Color(0xFF8D6E63); // Lighter brown
+
   @override
   void initState() {
     super.initState();
     _fetchUserData();
   }
 
-  /// ✅ **Fetch User Profile from Firestore**
   Future<void> _fetchUserData() async {
     if (user != null) {
       try {
@@ -47,7 +50,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     });
   }
 
-  /// 🔹 **Fetch Skincare Routine Schedules from Firebase**
   Stream<QuerySnapshot> _fetchUserRoutines() {
     return FirebaseFirestore.instance
         .collection('users')
@@ -57,7 +59,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         .snapshots();
   }
 
-  /// 🔹 **Fetch Reminder Schedules from Firebase**
   Stream<QuerySnapshot> _fetchReminderSchedules() {
     return FirebaseFirestore.instance
         .collection('users')
@@ -71,73 +72,105 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: const Text("User Profile"),
-        backgroundColor: Colors.deepOrangeAccent,
+        title: Text("My Profile", style: TextStyle(color: _textColor, fontWeight: FontWeight.bold)),
+        backgroundColor: _backgroundColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: _accentColor),
+        centerTitle: true,
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: _accentColor))
           : userData == null
-              ? const Center(
-                  child: Text("User data not available", style: TextStyle(fontSize: 16)),
+              ? Center(
+                  child: Text("User data not available", 
+                    style: TextStyle(fontSize: 16, color: _textColor)),
                 )
               : SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.deepOrangeAccent,
-                          child: Icon(Icons.person, size: 60, color: Colors.white),
+                        // Profile Header with Avatar
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _accentColor, width: 3),
+                          ),
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: _accentColor.withOpacity(0.2),
+                            child: Icon(Icons.person, size: 50, color: _accentColor),
+                          ),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           userData!['name'] ?? "Unknown",
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 24, 
+                            fontWeight: FontWeight.bold,
+                            color: _textColor,
+                          ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 8),
                         Text(
                           userData!['email'] ?? "No Email",
-                          style: const TextStyle(fontSize: 16, color: Colors.black54),
+                          style: TextStyle(
+                            fontSize: 16, 
+                            color: _secondaryTextColor,
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Skin Type: ${userData!['skinType'] ?? 'Not Tested'}",
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _accentColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: _accentColor.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            "Skin Type: ${userData!['skinType']?.toString().toUpperCase() ?? 'NOT TESTED'}",
+                            style: TextStyle(
+                              fontSize: 16, 
+                              fontWeight: FontWeight.w600,
+                              color: _textColor,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 30),
 
-                        /// 🔹 **Skincare Routines Section**
-                        const Text(
-                          "Your Skincare Routines",
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
+                        // Skincare Routines Section
+                        _buildSectionHeader("Your Skincare Routines"),
+                        const SizedBox(height: 16),
                         _buildSkincareRoutines(),
 
                         const SizedBox(height: 30),
 
-                        /// 🔹 **Reminder Schedules**
-                        const Text(
-                          "Reminder Schedules",
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
+                        // Reminder Schedules
+                        _buildSectionHeader("Reminder Schedules"),
+                        const SizedBox(height: 16),
                         _buildReminderSchedules(),
 
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text("Back to Home"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepOrangeAccent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        const SizedBox(height: 30),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _accentColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: const Text("BACK TO HOME", 
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
@@ -147,216 +180,243 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  /// 🔹 **Display Skincare Routines by Category**
-Widget _buildSkincareRoutines() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: _fetchUserRoutines(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
+  Widget _buildSectionHeader(String title) {
+    return Row(
+      children: [
+        Container(
+          height: 24,
+          width: 4,
+          decoration: BoxDecoration(
+            color: _accentColor,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: _textColor,
+          ),
+        ),
+      ],
+    );
+  }
 
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return const Center(
-            child: Text("No skincare routines scheduled.", style: TextStyle(fontSize: 16)));
-      }
-
-      // 🔹 **Categorizing routines by Date**
-      Map<String, List<Map<String, dynamic>>> routinesByDate = {};
-
-      for (var doc in snapshot.data!.docs) {
-        var routine = doc.data() as Map<String, dynamic>;
-        String date = routine['date'] ?? 'Unknown Date'; // Store date of routine
-
-        if (!routinesByDate.containsKey(date)) {
-          routinesByDate[date] = [];
+  Widget _buildSkincareRoutines() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _fetchUserRoutines(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(color: _accentColor));
         }
-        routinesByDate[date]!.add(routine);
-      }
 
-      return Column(
-        children: routinesByDate.entries.map((entry) {
-          return Card(
-            elevation: 5,
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            child: ExpansionTile(
-              title: Text(
-                "Skincare Routines - ${entry.key}",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent),
-              ),
-              children: entry.value.map((routine) {
-                return ListTile(
-                  title: Text(routine['question'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("Answer: ${routine['answer']}"),
-                  trailing: const Icon(Icons.check_circle, color: Colors.deepOrangeAccent),
-                );
-              }).toList(),
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
+            child: Text("No skincare routines scheduled.", 
+              style: TextStyle(fontSize: 16, color: _secondaryTextColor)),
           );
-        }).toList(),
-      );
-    },
-  );
-}
-
-  // Widget _buildSkincareRoutines() {
-  //   return StreamBuilder<QuerySnapshot>(
-  //     stream: _fetchUserRoutines(),
-  //     builder: (context, snapshot) {
-  //       if (snapshot.connectionState == ConnectionState.waiting) {
-  //         return const Center(child: CircularProgressIndicator());
-  //       }
-
-  //       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-  //         return const Center(
-  //             child: Text("No skincare routines scheduled.", style: TextStyle(fontSize: 16)));
-  //       }
-
-  //       // 🔹 **Categorizing routines by type**
-  //       Map<String, List<Map<String, dynamic>>> categorizedRoutines = {};
-
-  //       for (var doc in snapshot.data!.docs) {
-  //         var routine = doc.data() as Map<String, dynamic>;
-  //         String category = routine['category'] ?? 'Other'; // Default category if none exists
-
-  //         if (!categorizedRoutines.containsKey(category)) {
-  //           categorizedRoutines[category] = [];
-  //         }
-  //         categorizedRoutines[category]!.add(routine);
-  //       }
-
-  //       return Column(
-  //         children: categorizedRoutines.entries.map((entry) {
-  //           return Card(
-  //             elevation: 5,
-  //             margin: const EdgeInsets.symmetric(vertical: 10),
-  //             child: Padding(
-  //               padding: const EdgeInsets.all(15.0),
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   /// 🔹 **Category Title**
-  //                   Text(
-  //                     entry.key,
-  //                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent),
-  //                   ),
-  //                   const Divider(),
-
-  //                   /// 🔹 **Displaying Routines under Each Category**
-  //                   Column(
-  //                     children: entry.value.map((routine) {
-  //                       return ListTile(
-  //                         title: Text(routine['question'], style: const TextStyle(fontWeight: FontWeight.bold)),
-  //                         subtitle: Text("Answer: ${routine['answer']}"),
-  //                         trailing: const Icon(Icons.check_circle, color: Colors.deepOrangeAccent),
-  //                       );
-  //                     }).toList(),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           );
-  //         }).toList(),
-  //       );
-  //     },
-  //   );
-  // }
-
-  /// 🔹 **Display Reminder Schedules**
-Widget _buildReminderSchedules() {
-  return StreamBuilder<QuerySnapshot>(
-    stream: _fetchReminderSchedules(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return const Center(
-            child: Text("No reminders set.", style: TextStyle(fontSize: 16)));
-      }
-
-      // 🔹 **Categorizing reminders by Date**
-      Map<String, List<Map<String, dynamic>>> remindersByDate = {};
-
-      for (var doc in snapshot.data!.docs) {
-        var reminder = doc.data() as Map<String, dynamic>;
-        String date = reminder['date'] ?? 'Unknown Date'; // Store date of reminder
-
-        if (!remindersByDate.containsKey(date)) {
-          remindersByDate[date] = [];
         }
-        remindersByDate[date]!.add(reminder);
-      }
 
-      return Column(
-        children: remindersByDate.entries.map((entry) {
-          return Card(
-            elevation: 5,
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            child: ExpansionTile(
-              title: Text(
-                "Reminders - ${entry.key}",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent),
-              ),
-              children: entry.value.map((reminder) {
-                return ListTile(
-                  title: Text(
-                    "Skincare Routine Reminder",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+        Map<String, List<Map<String, dynamic>>> routinesByDate = {};
+
+        for (var doc in snapshot.data!.docs) {
+          var routine = doc.data() as Map<String, dynamic>;
+          String date = routine['date'] ?? 'Unknown Date';
+
+          if (!routinesByDate.containsKey(date)) {
+            routinesByDate[date] = [];
+          }
+          routinesByDate[date]!.add(routine);
+        }
+
+        return Column(
+          children: routinesByDate.entries.map((entry) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: _cardColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 2,
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
-                  subtitle: Text("Time: ${reminder['answer']}"),
-                  trailing: const Icon(Icons.alarm, color: Colors.deepOrangeAccent),
-                );
-              }).toList(),
+                ],
+              ),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                title: Text(
+                  "Routines - ${entry.key}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.arrow_drop_down,
+                  color: _accentColor,
+                ),
+                children: entry.value.map((routine) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.grey.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                      title: Text(
+                        routine['question'],
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: _textColor,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "Answer: ${routine['answer']}",
+                        style: TextStyle(color: _secondaryTextColor),
+                      ),
+                      leading: Icon(
+                        Icons.check_circle,
+                        color: _accentColor,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildReminderSchedules() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _fetchReminderSchedules(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator(color: _accentColor));
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
+            child: Text("No reminders set.", 
+              style: TextStyle(fontSize: 16, color: _secondaryTextColor)),
           );
-        }).toList(),
-      );
-    },
-  );
+        }
+
+        Map<String, List<Map<String, dynamic>>> remindersByDate = {};
+
+        for (var doc in snapshot.data!.docs) {
+          var reminder = doc.data() as Map<String, dynamic>;
+          String date = reminder['date'] ?? 'Unknown Date';
+
+          if (!remindersByDate.containsKey(date)) {
+            remindersByDate[date] = [];
+          }
+          remindersByDate[date]!.add(reminder);
+        }
+
+        return Column(
+          children: remindersByDate.entries.map((entry) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: _cardColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 2,
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                title: Text(
+                  "Reminders - ${entry.key}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _textColor,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.arrow_drop_down,
+                  color: _accentColor,
+                ),
+                children: entry.value.map((reminder) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.grey.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                      title: Text(
+                        "Skincare Routine Reminder",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: _textColor,
+                        ),
+                      ),
+                      subtitle: Text(
+                        "Time: ${reminder['answer']}",
+                        style: TextStyle(color: _secondaryTextColor),
+                      ),
+                      leading: Icon(
+                        Icons.alarm,
+                        color: _accentColor,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 }
-}
-//   Widget _buildReminderSchedules() {
-//     return StreamBuilder<QuerySnapshot>(
-//       stream: _fetchReminderSchedules(),
-//       builder: (context, snapshot) {
-//         if (snapshot.connectionState == ConnectionState.waiting) {
-//           return const Center(child: CircularProgressIndicator());
-//         }
-
-//         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-//           return const Center(
-//               child: Text("No reminders set.", style: TextStyle(fontSize: 16)));
-//         }
-
-//         return ListView.builder(
-//           shrinkWrap: true,
-//           physics: const NeverScrollableScrollPhysics(),
-//           itemCount: snapshot.data!.docs.length,
-//           itemBuilder: (context, index) {
-//             var reminder = snapshot.data!.docs[index];
-
-//             return Card(
-//               elevation: 5,
-//               margin: const EdgeInsets.symmetric(vertical: 8),
-//               child: ListTile(
-//                 title: Text(
-//                   "Skincare Routine Reminder",
-//                   style: const TextStyle(fontWeight: FontWeight.bold),
-//                 ),
-//                 subtitle: Text("Reminder Time: ${reminder['answer']}"),
-//                 trailing: const Icon(Icons.alarm, color: Colors.deepOrangeAccent),
-//               ),
-//             );
-//           },
-//         );
-//       },
-//     );
-//   }
-// }
-
-
-
-
-//-----------------------------------------------------------
