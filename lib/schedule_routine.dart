@@ -614,7 +614,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../notification_service.dart';
+import 'notification_service.dart';
 
 class ScheduleRoutinePage extends StatefulWidget {
   final String userId;
@@ -790,31 +790,39 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
     }
   }
 
-  Future<void> _saveReminderTime(TimeOfDay time) async {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userId)
-        .set({
-      'reminder_time': {
-        'hour': time.hour,
-        'minute': time.minute,
-      },
-    }, SetOptions(merge: true));
+Future<void> _saveReminderTime(TimeOfDay selectedTime, bool isMorning) async {
+  // Save to Firestore or any other storage if needed
+  await FirebaseFirestore.instance
+      .collection('users')
+      .doc('userID') // Replace with actual user ID
+      .set({
+    isMorning ? 'morning_reminder_time' : 'evening_reminder_time': {
+      'hour': selectedTime.hour,
+      'minute': selectedTime.minute,
+    },
+  }, SetOptions(merge: true));
 
-    await NotificationService.scheduleNotificationFromTimeOfDay(
-      0, // Notification ID
-      'Reminder', // Notification Title
-      'How is your day going? Share with us!', // Notification Body
-      time, // User-selected time
-    );
-  }
+  // Call the function to schedule the notification
+  await NotificationService.scheduleNotificationFromTimeOfDay(
+    0, // Notification ID
+    isMorning ? 'Morning Reminder' : 'Evening Reminder', // Title
+    'How is your day going? Share with us!', // Body
+    selectedTime, // Selected time for reminder
+  );
+
+  // Provide feedback to user (optional)
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("${isMorning ? 'Morning' : 'Evening'} reminder set for ${selectedTime.format(context)}")),
+  );
+}
+
 
   Future<void> _saveRoutine() async {
     setState(() => _isLoading = true);
 
     try {
       // Cancel existing notifications
-      await NotificationService.cancelAllNotifications();
+      //await NotificationService.cancelAllNotifications();
 
       // Save to Firestore
       await FirebaseFirestore.instance
@@ -879,40 +887,43 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
       setState(() => _isLoading = false);
     }
   }
-
-  Future<void> _selectTime(BuildContext context, bool isMorning) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: isMorning ? _morningTime : _eveningTime,
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: _accentColor,
-              onPrimary: Colors.white,
-              onSurface: _textColor,
-            ),
-            timePickerTheme: TimePickerThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+Future<void> _selectTime(BuildContext context, bool isMorning) async {
+  final TimeOfDay? picked = await showTimePicker(
+    context: context,
+    initialTime: isMorning ? _morningTime : _eveningTime,
+    builder: (BuildContext context, Widget? child) {
+      return Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: _accentColor,
+            onPrimary: Colors.white,
+            onSurface: _textColor,
+          ),
+          timePickerTheme: TimePickerThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: child!,
-        );
-      },
-    );
+        ),
+        child: child!,
+      );
+    },
+  );
 
-    if (picked != null) {
-      setState(() {
-        if (isMorning) {
-          _morningTime = picked;
-        } else {
-          _eveningTime = picked;
-        }
-      });
-    }
+  if (picked != null) {
+    setState(() {
+      if (isMorning) {
+        _morningTime = picked;
+      } else {
+        _eveningTime = picked;
+      }
+    });
+
+    // Call the save reminder function to schedule the notification
+    await _saveReminderTime(picked, isMorning);
   }
+}
+
 
   int _generateNotificationId(String type) {
     final userIdHash = widget.userId.hashCode;
@@ -992,6 +1003,17 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+ElevatedButton(
+  onPressed: () {
+    TimeOfDay selectedTime = TimeOfDay(hour: 11, minute: 42);  // Example Time
+    NotificationService.scheduleNotificationFromTimeOfDay(
+        1, "Reminder", "Time for your skincare routine!", selectedTime);
+  },
+  child: Text("Set Reminder"),
+),
+
+
+
                   // Welcome Card
                   Container(
                     width: double.infinity,
@@ -1025,6 +1047,7 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
                               color: _textColor,
                             ),
                             children: [
+                              
                               TextSpan(
                                 text: _hasExistingSchedule 
                                     ? "Update your skincare routine "
@@ -1043,6 +1066,7 @@ class _ScheduleRoutinePageState extends State<ScheduleRoutinePage> {
                               const TextSpan(
                                 text: ".",
                               ),
+                              
                             ],
                           ),
                         ),

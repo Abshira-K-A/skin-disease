@@ -6,8 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
+
 import 'package:skinCure/notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 //import 'notification_service.dart';
 import 'main_page.dart';
 //import 'package:skinCure/FirebaseService.dart';
@@ -49,10 +52,20 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print("Notification clicked: ${message.notification?.title}");
   });
 }
+Future<void> initializeNotifications() async {
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('app_icon');
+
+  final InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+}
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  tz.initializeTimeZones(); // ✅ Initialize time zones for notifications
+  //tz.initializeTimeZones(); // ✅ Initialize time zones for notifications
   await Firebase.initializeApp();// ✅ Ensure Firebase is initialized
  // await NotificationService.initializeNotifications();
   await NotificationService.initialize(); // ✅ Initialize notifications

@@ -1,50 +1,50 @@
 <!--<manifest xmlns:android="http://schemas.android.com/apk/res/android"> -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.skinCure">
-    
-      <!-- Permissions -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
-    
+
     <!-- Required for Android 13+ to access media files -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
-     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- ✅ Added Required Permissions for Notifications -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
- 
- <!-- permission for  location -->
- <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
- <queries>
-      <intent>
-        <action android:name="android.intent.action.VIEW" />
-          <data android:scheme="https" />
-     </intent>
-          <intent>
+    <!-- permission for  location -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <queries>
+        <intent>
             <action android:name="android.intent.action.VIEW" />
-             <data android:scheme="geo" />
-      </intent>
-      </queries>
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+    </queries>
 
 
     <application
+        android:enableOnBackInvokedCallback="true"
         android:label="skinCure"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-       
 
 
         <activity
@@ -65,13 +65,13 @@
 
 
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"
+            />
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
@@ -79,38 +79,38 @@
         <service
             android:name="com.baseflow.geolocator.GeolocatorLocationService"
             android:permission="android.permission.FOREGROUND_SERVICE"
-            android:foregroundServiceType="location"/>
+            android:foregroundServiceType="location" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
-              <!-- Firebase Configuration -->
-              <!-- ✅ Add Receivers for Scheduled Notifications -->
+        <!-- Firebase Configuration -->
+        <!-- ✅ Add Receivers for Scheduled Notifications -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.receivers.NotificationBroadcastReceiver"
             android:exported="false" />
-        
+
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.receivers.ScheduledNotificationReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 
-                   <!-- ✅ Add Notification Service -->
+        <!-- ✅ Add Notification Service -->
         <service
             android:name="com.dexterous.flutterlocalnotifications.services.NotificationService"
             android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false"/>
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="default_channel_id" />
-            
+
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="YOUR_ADMOB_APP_ID"/> <!-- Remove if not using AdMob -->
-        
+            android:value="YOUR_ADMOB_APP_ID" /> <!-- Remove if not using AdMob -->
+
         <!-- TensorFlow Lite Model Metadata -->
         <meta-data
             android:name="tflite_model"
@@ -118,7 +118,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_PLACES_API_KEY"/>
+            android:value="YOUR_GOOGLE_PLACES_API_KEY" />
 
 
         <!-- Camera & File Provider -->
@@ -129,7 +129,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths"/>
+                android:resource="@xml/provider_paths" />
         </provider>
 
         <!-- Required by Flutter -->
@@ -144,8 +144,8 @@
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
         </intent>
     </queries>
 </manifest>

@@ -79,6 +79,10 @@ android {
     namespace =  "com.example.skinCure"
     compileSdk = 35  // Latest stable SDK
 
+    aaptOptions {
+        noCompress "tflite"
+    }
+
     defaultConfig {
         applicationId =  "com.example.skinCure"
         minSdk = 26  // Minimum SDK, required by Firebase for some features

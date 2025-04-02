@@ -425,6 +425,15 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
   }
+  Future<void> initializeNotifications() async {
+  const AndroidInitializationSettings androidSettings =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  final InitializationSettings settings =
+      InitializationSettings(android: androidSettings);
+
+  await flutterLocalNotificationsPlugin.initialize(settings);
+}
 
   // Schedule Notification with DateTime
   static Future<void> scheduleNotification(
@@ -462,7 +471,7 @@ class NotificationService {
   }
 
   // Schedule Notification with TimeOfDay
-  static Future<void> scheduleNotificationFromTimeOfDay(
+ /*  static Future<void> scheduleNotificationFromTimeOfDay(
       int id, String title, String body, TimeOfDay selectedTime) async {
     final DateTime now = DateTime.now();
     final DateTime scheduledTime = DateTime(
@@ -502,13 +511,107 @@ class NotificationService {
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
+print("Scheduled Time: $scheduledDate");
+print("Current Time: $now");
 
     print("✅ Notification Scheduled at: $localTime");
+  } 
+ */
+// static Future<void> scheduleNotificationFromTimeOfDay(
+//     int id, String title, String body, TimeOfDay selectedTime) async {
+//   final DateTime now = DateTime.now();
+//   final DateTime scheduleTime = DateTime(
+//     now.year,
+//     now.month,
+//     now.day,
+//     selectedTime.hour,
+//     selectedTime.minute,
+//   ).add(Duration(seconds: 5));  // Schedule 5 seconds from now for testing
+
+//   final tz.TZDateTime localTime = tz.TZDateTime.from(scheduleTime, tz.local);
+
+//   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+//     'skincare_reminders_channel',
+//     'Skincare Reminders',
+//     channelDescription: 'Notifications for skincare routine reminders',
+//     importance: Importance.max,
+//     priority: Priority.high,
+//     playSound: true,
+//     enableVibration: true,
+//   );
+
+//   const NotificationDetails details = NotificationDetails(android: androidDetails);
+
+//   await flutterLocalNotificationsPlugin.zonedSchedule(
+//     id,
+//     title,
+//     body,
+//     localTime,
+//     details,
+//     androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+//     uiLocalNotificationDateInterpretation:
+//         UILocalNotificationDateInterpretation.absoluteTime,
+//     matchDateTimeComponents: DateTimeComponents.time,
+//   );
+
+//   // Send an immediate test notification to ensure notifications work
+//   await flutterLocalNotificationsPlugin.show(
+//     0,
+//     "Test Notification",
+//     "If this appears, notifications are working!",
+//     details,
+//   );
+
+//   print("✅ Notification Scheduled at: $localTime");
+// }
+
+  static Future<void> scheduleNotificationFromTimeOfDay(
+      int id, String title, String body, TimeOfDay selectedTime) async {
+    final DateTime now = DateTime.now();
+    DateTime scheduledTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      selectedTime.hour,
+      selectedTime.minute,
+    );
+
+    if (scheduledTime.isBefore(now)) {
+      scheduledTime = scheduledTime.add(Duration(days: 1));
+    }
+
+    final tz.TZDateTime localTime = tz.TZDateTime.from(scheduledTime, tz.local);
+
+    print("🔔 Scheduling notification for: $localTime");
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'skincare_reminders_channel',
+      'Skincare Reminders',
+      channelDescription: 'Notifications for skincare routine reminders',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    const NotificationDetails details = NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title,
+      body,
+      localTime,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    print("✅ Notification Scheduled Successfully at: $localTime");
   }
 
-  static Future<void> cancelAllNotifications() async {
-    await flutterLocalNotificationsPlugin.cancelAll();
-  }
+
 
   static Future<void> scheduleDailyNotification({
     required int id,

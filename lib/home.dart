@@ -1,10 +1,9 @@
-
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
-import 'package:skinCure/skin_tracking.dart';
+// import 'package:skinCure/skin_tracking.dart';
 import 'package:skinCure/userProfile.dart';
+import 'skin_tracking_page.dart';
 import 'login.dart';
 import 'skinType_test.dart';
 import 'schedule_routine.dart';
@@ -133,7 +132,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     scrollDirection: Axis.horizontal,
                     children: [
                       _buildSkincareCard(
-           season: "Winter",             
+          season: "Winter",             
           title: "❄️ Winter Care",
           description: "Combat dryness and maintain your glow during harsh winter months",
           imagePath: "assets/winter_care.jpg",
@@ -274,7 +273,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       Divider(color: _backgroundColor, height: 1),
                       _buildFeatureCard(
                         title: "📸 Track Your Skin",
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SkinTrackingPage())),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SkinTrackingPage())),
                       ),
                       Divider(color: _backgroundColor, height: 1),
                       _buildFeatureCard(

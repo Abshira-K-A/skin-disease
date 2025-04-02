@@ -1,276 +1,411 @@
-
-
-
-
-
-// import 'dart:io';
-// import 'dart:typed_data';
-// import 'package:flutter/services.dart';
-// import 'package:tflite_flutter/tflite_flutter.dart';
-// import 'package:image/image.dart' as img;
-// import 'dart:math';
-
-
-// class SkinDiseaseDetector {
-//   Interpreter? _interpreter;
-//   List<String> _labels = [];
-
-//   Future<void> _loadModel() async {
-//     try {
-//       _interpreter = await Interpreter.fromAsset(
-//         'assets/skinmate.tflite',
-//         options: InterpreterOptions()..threads = 4,
-//       );
-      
-//       final labelsData = await rootBundle.loadString('assets/labels.txt');
-//       _labels = labelsData.split('\n');
-//     } catch (e) {
-//       print("Model loading error: $e");
-//       throw Exception("Model initialization failed");
-//     }
-//   }
-
-//   Future<Map<String, dynamic>> classifyImage(File imageFile) async {
-//     if (_interpreter == null) await _loadModel();
-    
-//     try {
-//       final imageBytes = await imageFile.readAsBytes();
-//       final image = img.decodeImage(imageBytes);
-//       if (image == null) return {'error': 'Image decoding failed'};
-
-//       // Get pixel data correctly
-//       final input = _processImage(image);
-//       final output = List.filled(_labels.length, 0.0).reshape([1, _labels.length]);
-      
-//       _interpreter!.run(input, output);
-      
-//       final results = output[0];
-//       final maxIndex = results.indexOf(results.reduce(max));
-      
-//       return {
-//         'label': _labels[maxIndex],
-//         'confidence': (results[maxIndex] * 100).toStringAsFixed(1),
-//         'scores': List<double>.from(results)
-//       };
-//     } catch (e) {
-//       return {'error': 'Classification failed: $e'};
-//     }
-//   }
-
-//   /// Resize image to 224x224 and normalize pixel values
-//   List<List<List<List<double>>>> _processImage(img.Image image) {
-//   final resized = img.copyResize(image, width: 224, height: 224);
-//   return List.generate(1, (_) {
-//     return List.generate(224, (y) {
-//       return List.generate(224, (x) {
-//         final pixel = resized.getPixel(x, y); // Returns a Pixel object
-//         return [
-//           pixel.r / 255.0, // Corrected way to get red channel
-//           pixel.g / 255.0, // Corrected way to get green channel
-//           pixel.b / 255.0, // Corrected way to get blue channel
-//         ];
-//       });
-//     });
-//   });
-// }
-
-
-//   // Proper pixel value extraction methods
-//   int _getRed(int pixel) => (pixel >> 16) & 0xFF;
-//   int _getGreen(int pixel) => (pixel >> 8) & 0xFF;
-//   int _getBlue(int pixel) => pixel & 0xFF;
-
-//   void dispose() {
-//     _interpreter?.close();
-//   }
-// }
-
-
 import 'dart:io';
-import 'dart:math' as math;
-import 'package:flutter/services.dart';
-import 'package:tflite_flutter/tflite_flutter.dart';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import 'package:tflite_flutter/tflite_flutter.dart';
+import 'skin_tracking_service.dart';
 
-class SkinDiseaseDetector {
-  static const String _modelPath = 'assets/skinmate.tflite';
-  static const String _labelsPath = 'assets/labels.txt';
-  static const int _inputSize = 224;
-  
-  Interpreter? _interpreter;
-  List<String> _labels = [];
-  bool _isModelLoaded = false;
+class SkinTrackingPage extends StatefulWidget {
+  const SkinTrackingPage({super.key});
 
-  /// Loads the model and labels
-  Future<void> loadModel() async {
-    if (_isModelLoaded) return;
-    
+  @override
+  _SkinTrackingPageState createState() => _SkinTrackingPageState();
+}
+
+class _SkinTrackingPageState extends State<SkinTrackingPage> {
+  final _service = SkinTrackingService();
+  final _picker = ImagePicker();
+  File? _selectedImage;
+  String? _prediction;
+  String? _error;
+  bool _isLoading = false;
+  bool _isModelLoading = false;
+  int _currentAttempt = 0;
+  final int _maxRetries = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadModel();
+  }
+
+  Future<void> _loadModel() async {
+    if (_isModelLoading) return;
+
+    setState(() {
+      _isModelLoading = true;
+      _error = null;
+      _currentAttempt++;
+    });
+
     try {
-      // Load interpreter with optimizations
-      final options = InterpreterOptions()
-        ..threads = 4
-        ..useNnApiForAndroid = true;
-        
-      _interpreter = await Interpreter.fromAsset(
-        _modelPath,
-        options: options,
-      );
-      
-      // Load and parse labels
-      final labelsData = await rootBundle.loadString(_labelsPath);
-      _labels = labelsData.split('\n')
-          .where((label) => label.trim().isNotEmpty)
-          .toList();
-      
-      // Verify model compatibility with labels
-      final outputTensor = _interpreter!.getOutputTensor(0);
-      final outputShape = outputTensor.shape;
-      
-      if (outputShape[1] != _labels.length) {
-        throw Exception('Model output (${outputShape[1]} classes) doesn\'t match labels (${_labels.length} classes)');
+      if (_currentAttempt > 1) {
+        _service.dispose();
       }
-      
-      _isModelLoaded = true;
-      print('Model and labels loaded successfully: ${_labels.join(", ")}');
+
+      await _service.loadModel();
+      setState(() {
+        _isModelLoading = false;
+        _currentAttempt = 0;
+      });
     } catch (e) {
-      print('Failed to load model or labels: $e');
-      _isModelLoaded = false;
-      _interpreter?.close();
-      throw Exception('Model initialization failed: $e');
+      setState(() {
+        _isModelLoading = false;
+        _error = 'Attempt $_currentAttempt/$_maxRetries: ${e.toString()}';
+      });
+
+      if (_currentAttempt < _maxRetries) {
+        await Future.delayed(const Duration(seconds: 1));
+        await _loadModel();
+      } else {
+        setState(() {
+          _error = 'Failed to load model after $_maxRetries attempts';
+          _currentAttempt = 0;
+        });
+      }
     }
   }
 
-  /// Classifies an image file and returns the results
-  Future<Map<String, dynamic>> classifyImage(File imageFile) async {
-    // Ensure model is loaded
-    if (!_isModelLoaded) {
-      try {
-        await loadModel();
-      } catch (e) {
-        return {'error': 'Model initialization failed: $e'};
-      }
-    }
-    
+  Future<void> _pickImage(ImageSource source) async {
     try {
-      // Read and decode image
-      final imageBytes = await imageFile.readAsBytes();
-      final image = img.decodeImage(imageBytes);
-      if (image == null) {
-        return {'error': 'Image decoding failed. Please try another image.'};
+      final image = await _picker.pickImage(source: source);
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _prediction = null;
+          _error = null;
+        });
       }
-      
-      // Preprocess image
-      final processedInput = _processImage(image);
-      
-      // Prepare output buffer
-      final outputBuffer = List<List<double>>.filled(
-        1,
-        List<double>.filled(_labels.length, 0.0),
-      );
-      
-      // Run inference
-      _interpreter!.run(processedInput, outputBuffer);
-      
-      // Process results
-      final results = outputBuffer[0];
-      
-      // Find the classification with highest confidence
-      int maxIndex = 0;
-      double maxValue = results[0];
-      
-      for (int i = 1; i < results.length; i++) {
-        if (results[i] > maxValue) {
-          maxValue = results[i];
-          maxIndex = i;
-        }
-      }
-      
-      // Create standardized response
-      return {
-        'label': _labels[maxIndex],
-        'confidence': (maxValue * 100).toStringAsFixed(1),
-        'confidenceValue': maxValue,
-        'allLabels': _labels,
-        'allScores': List<double>.from(results),
-        'success': true
-      };
     } catch (e) {
-      print('Classification error: $e');
-      return {
-        'error': 'Classification failed: $e',
-        'success': false
-      };
+      setState(() => _error = 'Image selection failed: ${e.toString()}');
     }
   }
 
-  /// Process image for the model input (resize and normalize)
-  List<List<List<List<double>>>> _processImage(img.Image image) {
-    // Resize image to expected dimensions
-    final resized = img.copyResize(
-      image,
-      width: _inputSize,
-      height: _inputSize,
-      interpolation: img.Interpolation.cubic
+  Future<void> _analyzeImage() async {
+    if (_selectedImage == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await _service.predictImage(_selectedImage!);
+      if (result == null || result.isEmpty) {
+        throw Exception('Empty prediction result');
+      }
+      setState(() => _prediction = result);
+    } on ImageProcessingException catch (e) {
+      setState(() => _error = 'Image processing error: ${e.message}');
+    } on ModelException catch (e) {
+      setState(() => _error = 'Model error: ${e.message}');
+      await _loadModel();
+    } catch (e) {
+      setState(() => _error = 'Unexpected error: ${e.toString()}');
+      if (e.toString().contains('not loaded') ||
+          e.toString().contains('interpreter')) {
+        _currentAttempt = 0;
+        await _loadModel();
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _service.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Skin Analysis'),
+        backgroundColor: Colors.deepOrangeAccent,
+      ),
+      body: _buildBody(),
     );
-    
-    // Create a buffer for normalized RGB values - shape [1, 224, 224, 3]
-    final inputBuffer = List.generate(
-      1,
-      (_) => List.generate(
-        _inputSize,
-        (_) => List.generate(
-          _inputSize,
-          (_) => List<double>.filled(3, 0.0),
+  }
+
+  Widget _buildBody() {
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  _currentAttempt = 0;
+                  _loadModel();
+                },
+                child: const Text('Retry Loading Model'),
+              ),
+            ],
+          ),
         ),
+      );
+    }
+
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              if (_isModelLoading)
+                const LinearProgressIndicator()
+              else if (_selectedImage != null)
+                _buildImagePreview()
+              else
+                _buildImageSelection(),
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              if (_prediction != null) _buildResult(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return Column(
+      children: [
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+              image: FileImage(_selectedImage!),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () => _pickImage(ImageSource.gallery),
+              child: const Text('Change Image'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: () => setState(() => _selectedImage = null),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          onPressed: _isLoading ? null : _analyzeImage,
+          icon: const Icon(Icons.analytics),
+          label: const Text('Analyze Skin Image'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepOrangeAccent,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(200, 50),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageSelection() {
+    return Column(
+      children: [
+        const Text(
+          'Select an image of your skin condition',
+          style: TextStyle(fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _pickImage(ImageSource.camera),
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Camera'),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: () => _pickImage(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Gallery'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResult() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const Text(
+            'Analysis Result:',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _prediction!,
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
+  }
+}
 
-    // Fill the buffer with normalized pixel values
-    for (var y = 0; y < _inputSize; y++) {
-      for (var x = 0; x < _inputSize; x++) {
-        final pixel = resized.getPixel(x, y);
-        // Normalize to 0-1 range
-        inputBuffer[0][y][x][0] = pixel.r / 255.0;
-        inputBuffer[0][y][x][1] = pixel.g / 255.0;
-        inputBuffer[0][y][x][2] = pixel.b / 255.0;
+class SkinTrackingService {
+  static const String _modelPath = 'assets/skinmate.tflite';
+  static const int _inputSize = 224;
+  static const List<String> _labels = [
+    'blackheads',
+    'Acne',
+    'wrinkles',
+    'darkspots'
+  ];
+
+  Interpreter? _interpreter;
+  bool _isModelLoaded = false;
+
+  Future<void> loadModel() async {
+    try {
+      final modelPath = await _getModelPath();
+      final options = InterpreterOptions()
+        ..threads = 4
+        ..useNnApiForAndroid = false;
+      _interpreter = await Interpreter.fromAsset(modelPath, options: options);
+      print('Model loaded successfully');
+    } catch (e, stackTrace) {
+      print('Error loading model: $e');
+      print(stackTrace);
+    }
+  }
+
+  Future<String> predictImage(File image) async {
+    if (!_isModelLoaded || _interpreter == null) {
+      throw ModelException('Model not loaded. Call loadModel() first');
+    }
+
+    try {
+      final input = _preprocessImage(image);
+      final output = List<List<double>>.filled(
+          1, List<double>.filled(_labels.length, 0.0));
+      _interpreter!.run(input, output);
+      return _interpretResult(output[0]);
+    } catch (e) {
+      _log('Prediction failed: $e');
+      throw Exception('Prediction failed: $e');
+    }
+  }
+
+  Uint8List _preprocessImage(File imageFile) {
+    try {
+      final imageBytes = imageFile.readAsBytesSync();
+      final decodedImage = img.decodeImage(imageBytes);
+      if (decodedImage == null)
+        throw ImageProcessingException('Failed to decode image');
+
+      final resizedImage = img.copyResize(decodedImage,
+          width: _inputSize,
+          height: _inputSize,
+          interpolation: img.Interpolation.cubic);
+
+      final inputBuffer = Float32List(1 * _inputSize * _inputSize * 3);
+      int pixelIndex = 0;
+
+      for (var y = 0; y < _inputSize; y++) {
+        for (var x = 0; x < _inputSize; x++) {
+          final pixel = resizedImage.getPixel(x, y);
+          inputBuffer[pixelIndex++] = pixel.r / 255.0;
+          inputBuffer[pixelIndex++] = pixel.g / 255.0;
+          inputBuffer[pixelIndex++] = pixel.b / 255.0;
+        }
+      }
+
+      return inputBuffer.buffer.asUint8List();
+    } catch (e) {
+      throw ImageProcessingException(
+          'Image processing failed: ${e.toString()}');
+    }
+  }
+
+  String _interpretResult(List<double> output) {
+    int maxIndex = 0;
+    double maxValue = output[0];
+
+    for (int i = 1; i < output.length; i++) {
+      if (output[i] > maxValue) {
+        maxValue = output[i];
+        maxIndex = i;
       }
     }
-    
-    return inputBuffer;
-  }
-  
-  /// Returns top N classifications with their scores
-  List<Map<String, dynamic>> getTopNResults(List<double> scores, int n) {
-    // Create list of (index, score) pairs
-    List<MapEntry<int, double>> indexedScores = [];
-    for (int i = 0; i < scores.length; i++) {
-      indexedScores.add(MapEntry(i, scores[i]));
-    }
-    
-    // Sort by score in descending order
-    indexedScores.sort((a, b) => b.value.compareTo(a.value));
-    
-    // Take top N results
-    final topN = indexedScores.take(math.min(n, scores.length));
-    
-    // Convert to readable format
-    return topN.map((entry) => {
-      'label': _labels[entry.key],
-      'confidence': (entry.value * 100).toStringAsFixed(1),
-      'score': entry.value
-    }).toList();
+
+    final confidence = (maxValue * 100).toStringAsFixed(1);
+    return '${_labels[maxIndex]} ($confidence% confidence)';
   }
 
-  /// Free resources when done
+  Future<String> _getModelPath() async {
+    return _modelPath;
+  }
+
+  void _verifyModelShape() {
+    final inputTensor = _interpreter!.getInputTensor(0);
+    if (inputTensor.shape.length != 4 ||
+        inputTensor.shape[1] != _inputSize ||
+        inputTensor.shape[2] != _inputSize ||
+        inputTensor.shape[3] != 3) {
+      throw ModelException(
+          'Invalid input shape. Expected [1,224,224,3], got ${inputTensor.shape}');
+    }
+
+    final outputTensor = _interpreter!.getOutputTensor(0);
+    if (outputTensor.shape.length != 2 ||
+        outputTensor.shape[1] != _labels.length) {
+      throw ModelException(
+          'Invalid output shape. Expected [1,${_labels.length}], got ${outputTensor.shape}');
+    }
+  }
+
+  void _log(String message) {
+    debugPrint('[SkinTracking] $message');
+  }
+
   void dispose() {
     _interpreter?.close();
     _isModelLoaded = false;
-    print('SkinDiseaseDetector resources released');
+    _log('Service disposed');
   }
-  
-  /// Check if model is loaded
+
   bool get isModelLoaded => _isModelLoaded;
-  
-  /// Get the list of supported skin conditions
-  List<String> get supportedConditions => List.from(_labels);
+}
+
+class ImageProcessingException implements Exception {
+  final String message;
+  ImageProcessingException(this.message);
+}
+
+class ModelException implements Exception {
+  final String message;
+  ModelException(this.message);
 }
