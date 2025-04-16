@@ -1,12 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:skinCure/schedule_routines.test.dart';
 // import 'package:skinCure/skin_tracking.dart';
 import 'package:skinCure/userProfile.dart';
 import 'skin_tracking_page.dart';
 import 'login.dart';
 import 'skinType_test.dart';
-import 'schedule_routine.dart';
+import 'schedule_routines.test.dart';
 import 'chatbot_page.dart';
 import 'skin_clinic_page.dart';
 
@@ -273,18 +274,19 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       Divider(color: _backgroundColor, height: 1),
                       _buildFeatureCard(
                         title: "📸 Track Your Skin",
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SkinTrackingPage())),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SkinAnalysisPage())),
                       ),
                       Divider(color: _backgroundColor, height: 1),
                       _buildFeatureCard(
                         title: "📅 Schedule Routines",
                         onTap: () {
+                        
                           final user = FirebaseAuth.instance.currentUser;
                           if (user != null) {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => ScheduleRoutinePage(userId: user.uid)),
-                            );
+                              MaterialPageRoute(builder: (context) => ScheduleRoutinePage(userId: '',)));
+                    
                           }
                         },
                       ),
@@ -328,7 +330,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatbotPage()));
                   },
                   // icon: const Icon(Icons.chat, size: 30, color: Colors.white),
-                     icon: const Icon(Icons.face_retouching_natural, size: 30, color: Colors.white),
+                    icon: const Icon(Icons.face_retouching_natural, size: 30, color: Colors.white),
                   padding: const EdgeInsets.all(15),
                 ),
               ),

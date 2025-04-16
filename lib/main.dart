@@ -11,11 +11,11 @@ import 'package:skinCure/notification_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-//import 'notification_service.dart';
+
 import 'main_page.dart';
 //import 'package:skinCure/FirebaseService.dart';
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-    GlobalKey<ScaffoldMessengerState>(); // ✅ Global key for Snackbar
+    GlobalKey<ScaffoldMessengerState>(); //  Global key for Snackbar
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -65,17 +65,17 @@ Future<void> initializeNotifications() async {
 }
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  //tz.initializeTimeZones(); // ✅ Initialize time zones for notifications
-  await Firebase.initializeApp();// ✅ Ensure Firebase is initialized
+  tz.initializeTimeZones(); //  Initialize time zones for notifications
+  await Firebase.initializeApp();//  Ensure Firebase is initialized
  // await NotificationService.initializeNotifications();
-  await NotificationService.initialize(); // ✅ Initialize notifications
-   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await _checkLocationPermission(); // ✅ Request location permission before starting app
+  await NotificationService.initialize(); //  Initialize notifications
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await _checkLocationPermission(); //  Request location permission before starting app
 
   runApp(const MyApp());
 }
 
-/// ✅ **Requests Location Permission at Startup**
+///  **Requests Location Permission at Startup**
 Future<void> _checkLocationPermission() async {
   LocationPermission permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied ||
@@ -98,15 +98,15 @@ class _MyAppState extends State<MyApp> {
     _scheduleUserNotifications();
   }
 
-  /// ✅ **Schedules Notifications When User Logs In**
+  ///  **Schedules Notifications When User Logs In**
   void _scheduleUserNotifications() async {
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user != null) {
       NotificationService notificationService = NotificationService();
       NotificationService.scheduleNotificationsFromFirebase(user.uid, context);
-      print("✅ Notifications scheduled for ${user.uid}");
+      print("Notifications scheduled for ${user.uid}");
     } else {
-      print("⚠️ No user logged in, skipping notification scheduling.");
+      print(" No user logged in, skipping notification scheduling.");
     }
   });
 }
@@ -117,15 +117,15 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "SkinCure",
-      scaffoldMessengerKey: scaffoldMessengerKey, // ✅ Assign global key for Snackbars
+      scaffoldMessengerKey: scaffoldMessengerKey, //  Assign global key for Snackbars
       theme: ThemeData(
         primarySwatch: Colors.deepOrange,
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
-        brightness: Brightness.dark, // ✅ Supports dark mode
+        brightness: Brightness.dark, //  Supports dark mode
       ),
-      themeMode: ThemeMode.light, // ✅ **Forced light mode globally**
+      themeMode: ThemeMode.light, // **Forced light mode globally**
       home: const MainPage(),
     );
   }
