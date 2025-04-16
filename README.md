@@ -5,14 +5,17 @@
 <img src="screenshots/homeF2.jpg" alt="Home Screen" width="300"/>
 
 ### 🏠 chat bot
-![Home Screen](screenshots/chatbot.jpg)
+<img src="screenshots/chatbot.jpg" alt="Home Screen" width="300"/>
 
 ### 🧪 clinic 
-![clinic Page](screenshots/clinic.jpg)
+<img src="screenshots/clinic.jpg" alt="Home Screen" width="300"/>
+
 
 ### 🧪 routine 
-![clinic Page](screenshots/routineSc2.jpg)
+<img src="screenshots/routineSc2.jpg" alt="Home Screen" width="300"/>
+
 
 ### 🧪 test
-![clinic Page](screenshots/skintest.jpg)
+<img src="screenshots/skintest.jpg" alt="Home Screen" width="300"/>
+
 
