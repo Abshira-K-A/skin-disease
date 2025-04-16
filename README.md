@@ -2,7 +2,7 @@
 ## 📸 Screenshots
 
 ### 🏠 home
-![Home Screen](screenshots/homeF2.jpg)
+<img src="screenshots/home_screen.png" alt="Home Screen" width="300"/>
 
 ### 🏠 chat bot
 ![Home Screen](screenshots/chatbot.jpg)
