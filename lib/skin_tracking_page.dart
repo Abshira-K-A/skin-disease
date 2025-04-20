@@ -172,6 +172,8 @@ class _SkinAnalysisPageState extends State<SkinAnalysisPage> {
   String _result = '';
   List<Map<String, dynamic>> _analysisResults = [];
   late tflite.Interpreter _interpreter;
+  
+  tflite.TfLiteType? get inputType => null;
 
   @override
   void initState() {
@@ -249,7 +251,7 @@ Future<void> _analyzeImage() async {
    // final inputType = _convertToTfLiteType(inputTensor.type);
 
     // 3. Resize and preprocess image
-    final processedImage = _preprocessImage(image, inputShape, inputType);
+    final processedImage = _preprocessImage(image, inputShape, inputType!);
 
     // 4. Prepare output buffer
     final outputTensor = _interpreter.getOutputTensors().first;
